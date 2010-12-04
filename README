@@ -1,0 +1,5 @@
+smbpipe (Python version)
+
+smbpipe is an openbox pipe menu for accessing (list, mount, etc.) samba shares.
+Shares containing spaces are handled.
+Currently only listing of printers is implemented.
