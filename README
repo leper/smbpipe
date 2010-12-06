@@ -2,9 +2,14 @@ smbpipe (Python version)
 
 smbpipe is an openbox pipe menu for accessing (list, mount, etc.) samba shares.
 Shares containing spaces are handled.
-Currently only listing of printers is implemented.
+Printers will be copied to clipboard for usage with CUPS.
+
+Usage:
+Add something like this to your menu.xml
+<menu id="smbpipe" label="Samba Shares" execute="python /path/to/smbpipe.py" />
 
 Dependencies:
 python
 smbclient
 urxvt (should be easily replaceable with any other terminal emulator)
+xclip (for copying url for CUPS to clipboard)

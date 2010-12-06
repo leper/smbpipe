@@ -93,5 +93,10 @@ elif sys.argv[1] == "--server":
     printers.sort(key=lambda printer: printer[len(disk)-1]!='$', reverse=True)
     print('<separator label="Printer" />')
     for printer in printers:
-        print('<item label="'+printer+'" />')
+        print('<item label="'+printer+'">')
+        print('<action name="Execute">')
+        #smb://username.password@servername/printer
+        print('<command>sh -c "echo \"smb://'+server+'/'+printer+'\" | xclip"</command>')
+        print('</action>')
+        print('</item>')
     print('</openbox_pipe_menu>')
