@@ -7,6 +7,9 @@ Printers will be copied to clipboard for usage with CUPS.
 Usage:
 Add something like this to your menu.xml
 <menu id="smbpipe" label="Samba Shares" execute="python /path/to/smbpipe.py" />
+Credential files should be stored in $XDG_DATA_HOME/smbpipe as a file with the name of the server.
+Do NOT forget to set the right permissions (chmod 600)
+The creation of new credential files is not yet supported.
 
 Dependencies:
 python
