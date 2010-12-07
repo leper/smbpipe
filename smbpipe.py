@@ -4,9 +4,10 @@ import re
 import os
 import time
 import subprocess
+import getpass
 
 mountpath = "/mnt/samba"
-credentialpath = "$XDG_DATA_HOME/smbpipe"
+credentialpath = os.environ["XDG_DATA_HOME"]+"/smbpipe"
 tmppath = "/tmp"
 tmpfile = "openbox_smbpipe_tmp"
 maxage = 30 #in minutes
@@ -32,7 +33,7 @@ Args:
     exit()
 
 elif sys.argv[1] == "--refresh":
-    subprocess.call("rm", "-f "+tmppath+"/"+tmpfile)
+    subprocess.call(["rm", "-f", tmppath+"/"+tmpfile])
 
 elif sys.argv[1] == "--serverlist":
     try:
@@ -54,11 +55,30 @@ elif sys.argv[1] == "--serverlist":
         print(f.read())
     f.closed
 
+elif sys.argv[1] == "--credential-file":
+    server = sys.argv[2]
+    username = input("Username: ")
+    password = getpass.getpass()
+    with open(credentialpath+'/'+server, 'w') as f:
+        f.write('username='+username+'\n')
+        f.write('password='+password+'\n')
+    f.closed
+    subprocess.call(["chmod", "600", credentialpath+"/"+server])
+
 elif sys.argv[1] == "--server":
     server = sys.argv[2]
     print('<openbox_pipe_menu>')
     ip = subprocess.getoutput("nmblookup "+server+" | grep "+server+"'<' | sed -e 's/ [^ ]*$//g'").splitlines()
     serverip="ERROR"
+    if os.path.isfile(credentialpath+"/"+server):
+        print('<item label="Change credential file">')
+    else:
+        print('<item label="Create credential file">')
+    print('<action name="Execute">')
+    print('<command>urxvt -e sh -c "python '+sys.argv[0]+' --credential-file '+server+'"</command>')
+    print('</action>')
+    print('</item>')
+
     for line in ip:
         if re.match("\d+\.\d+\.\d+\.\d+", line):
             serverip=line.rstrip()
@@ -75,7 +95,6 @@ elif sys.argv[1] == "--server":
     disks.sort(key=str.lower)
     #hidden shares last
     disks.sort(key=lambda disk: disk[len(disk)-1]!='$', reverse=True)
-    print(disks)
     print('<separator label="Mount" />')
     for disk in disks:
         print('<item label="'+disk+'">')
