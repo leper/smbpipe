@@ -4,6 +4,7 @@ smbpipe is an openbox pipe menu for accessing (list, mount, etc.) samba shares.
 Shares containing spaces are handled.
 Printers will be copied to clipboard for usage with CUPS.
 Changing or creating of credential files is supported and the right permissions (chmod 600) are set.
+Shares are mounted using sudo, but permissions are set that every user can access the mounted shares.
 
 Usage:
 Add something like this to your menu.xml
@@ -14,5 +15,6 @@ Do NOT forget to set the right permissions (chmod 600) if you write the credenti
 Dependencies:
 python
 smbclient
+sudo
 urxvt (should be easily replaceable with any other terminal emulator)
 xclip (for copying url for CUPS to clipboard)

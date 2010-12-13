@@ -70,6 +70,15 @@ elif sys.argv[1] == "--server":
     print('<openbox_pipe_menu>')
     ip = subprocess.getoutput("nmblookup "+server+" | grep "+server+"'<' | sed -e 's/ [^ ]*$//g'").splitlines()
     serverip="ERROR"
+    #print('<item label="Change credentials">')
+    #if !os.path.isfile(credentialpath+"/"+server):
+    #    username = ""
+    #    password = ""
+    #    with open(credentialpath+'/'+server, 'w') as f:
+    #        f.write('username='+username+'\n')
+    #        f.write('username='+username+'\n')
+    #    f.closed
+    #if no credential file use guest option for mounting/smbclient
     if os.path.isfile(credentialpath+"/"+server):
         print('<item label="Change credential file">')
     else:
@@ -99,7 +108,7 @@ elif sys.argv[1] == "--server":
     for disk in disks:
         print('<item label="'+disk+'">')
         print('<action name="Execute">')
-        print('<command>urxvt -e sh -c "sudo mkdir \\"'+mountpath+'/'+server+'/'+disk+'\\"; sudo mount -t cifs \\"//'+server+'/'+disk+'\\" \\"'+mountpath+'/'+server+'/'+disk+'\\" -o ip='+serverip+',credentials='+credentialpath+'/'+server+'"</command>')
+        print('<command>urxvt -e sh -c "sudo mkdir '+mountpath+'/'+server+'/'+re.escape(disk)+'; sudo mount -t cifs //'+server+'/'+re.escape(disk)+' '+mountpath+'/'+server+'/'+re.escape(disk)+' -o ip='+serverip+',credentials='+credentialpath+'/'+server+',file_mode=0777,dir_mode=0777,noacl,noperm"</command>')
         print('</action>')
         print('</item>')
     
