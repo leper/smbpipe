@@ -58,7 +58,6 @@ def getshares(server, serverip, user):
 
 
 
-
 if len(sys.argv) == 1:
     print('<openbox_pipe_menu>')
     print('<menu id="smbpipepython" label="Servers" execute="python '+sys.argv[0]+' --serverlist" />')
@@ -126,21 +125,17 @@ elif sys.argv[1] == "--server":
         if re.match("\d+\.\d+\.\d+\.\d+", line):
             serverip=line.rstrip()
             break
-    print('<menu id="'+server+'-guest" label="'+"Guest"+'">')
-    getshares(server, serverip, "guest")
-    print('</menu>')
-    
     #for every file in credentialpath/server/ -> users
+    users = []
+    users.append("guest")
     try:
-        users = os.listdir(credentialpath+"/"+server)
-        for user in users:
-            print('<menu id="'+server+'-'+user+'" label="'+user+'">')
-            #list shares
-            getshares(server, serverip, user)
-            print('</menu>')
+        users += os.listdir(credentialpath+"/"+server)
     except OSError:
         pass
-    
+    for user in users:
+        print('<menu id="'+server+'-'+user+'" label="'+user+'">')
+        getshares(server, serverip, user)
+        print('</menu>')
     print('<item label="Create credential file">')
     print('<action name="Execute">')
     print('<command>urxvt -e sh -c "python '+sys.argv[0]+' --credential-file '+server+'"</command>')
