@@ -12,6 +12,53 @@ tmppath = "/tmp"
 tmpfile = "openbox_smbpipe_tmp"
 maxage = 30 #in minutes
 
+def getshares(server, serverip, user):
+    if user == "guest":
+        listoption = "-U guest -N"
+        mountoption = "guest"
+    else:
+        listoption = "--authentication-file="+credentialpath+"/"+server+"/"+user
+        mountoption = "credentials="+credentialpath+"/"+server+"/"+user
+
+    shares = subprocess.getoutput("smbclient -L \\"+server+" -g "+listoption).splitlines()
+    for a in shares[:]:
+        if not re.search("[|]", a):
+            shares.remove(a)
+    
+    disks = []
+    for a in shares:
+        if re.match("Disk", a):
+            disks.append(re.split("[|]", a)[1])
+    disks.sort(key=str.lower)
+    #hidden shares last
+    disks.sort(key=lambda disk: disk[len(disk)-1]!='$', reverse=True)
+    print('<separator label="Mount" />')
+    for disk in disks:
+        print('<item label="'+disk+'">')
+        print('<action name="Execute">')
+        print('<command>urxvt -e sh -c "sudo mkdir '+mountpath+'/'+server+'/'+re.escape(disk)+'; sudo mount -t cifs //'+server+'/'+re.escape(disk)+' '+mountpath+'/'+server+'/'+re.escape(disk)+' -o ip='+serverip+','+mountoption+',file_mode=0777,dir_mode=0777,noacl,noperm"</command>')
+        print('</action>')
+        print('</item>')
+    
+    printers = []
+    for a in shares:
+        if re.match("Printer", a):
+            printers.append(re.split("[|]", a)[1])
+    printers.sort(key=str.lower)
+    #hidden shares last
+    printers.sort(key=lambda printer: printer[len(disk)-1]!='$', reverse=True)
+    print('<separator label="Printer" />')
+    for printer in printers:
+        print('<item label="'+printer+'">')
+        print('<action name="Execute">')
+        #smb://username.password@servername/printer
+        print('<command>sh -c "echo \"smb://'+server+'/'+printer+'\" | xclip"</command>')
+        print('</action>')
+        print('</item>')
+
+
+
+
 if len(sys.argv) == 1:
     print('<openbox_pipe_menu>')
     print('<menu id="smbpipepython" label="Servers" execute="python '+sys.argv[0]+' --serverlist" />')
@@ -57,77 +104,47 @@ elif sys.argv[1] == "--serverlist":
 
 elif sys.argv[1] == "--credential-file":
     server = sys.argv[2]
+    try:
+        os.mkdir(credentialpath+"/"+server)
+    except OSError:
+        pass
+    subprocess.call(["chmod", "700", credentialpath+"/"+server])
     username = input("Username: ")
     password = getpass.getpass()
-    with open(credentialpath+'/'+server, 'w') as f:
+    with open(credentialpath+'/'+server+'/'+username, 'w') as f:
         f.write('username='+username+'\n')
         f.write('password='+password+'\n')
     f.closed
-    subprocess.call(["chmod", "600", credentialpath+"/"+server])
+    subprocess.call(["chmod", "600", credentialpath+"/"+server+"/"+username])
 
 elif sys.argv[1] == "--server":
     server = sys.argv[2]
     print('<openbox_pipe_menu>')
     ip = subprocess.getoutput("nmblookup "+server+" | grep "+server+"'<' | sed -e 's/ [^ ]*$//g'").splitlines()
     serverip="ERROR"
-    #if no credential file use guest option for mounting/smbclient
-    #TODO add possibility to use different logins on a server
-    #TODO guest as standard (or in the first submenu) and all other users (get 
-    #TODO users out of credential files) and add option to add/delete users
-    if os.path.isfile(credentialpath+"/"+server):
-        print('<item label="Change credential file">')
-        guest = False
-    else:
-        print('<item label="Create credential file">')
-        guest = True
+    for line in ip:
+        if re.match("\d+\.\d+\.\d+\.\d+", line):
+            serverip=line.rstrip()
+            break
+    print('<menu id="'+server+'-guest" label="'+"Guest"+'">')
+    getshares(server, serverip, "guest")
+    print('</menu>')
+    
+    #for every file in credentialpath/server/ -> users
+    try:
+        users = os.listdir(credentialpath+"/"+server)
+        for user in users:
+            print('<menu id="'+server+'-'+user+'" label="'+user+'">')
+            #list shares
+            getshares(server, serverip, user)
+            print('</menu>')
+    except OSError:
+        pass
+    
+    print('<item label="Create credential file">')
     print('<action name="Execute">')
     print('<command>urxvt -e sh -c "python '+sys.argv[0]+' --credential-file '+server+'"</command>')
     print('</action>')
     print('</item>')
 
-    for line in ip:
-        if re.match("\d+\.\d+\.\d+\.\d+", line):
-            serverip=line.rstrip()
-            break
-    if guest:
-        shares = subprocess.getoutput("smbclient -L \\"+server+" -g -U guest -N").splitlines()
-    else:
-        shares = subprocess.getoutput("smbclient -L \\"+server+" -g --authentication-file="+credentialpath+"/"+server).splitlines()
-    for a in shares[:]:
-        if not re.search("[|]", a):
-            shares.remove(a)
-    
-    disks = []
-    for a in shares:
-        if re.match("Disk", a):
-            disks.append(re.split("[|]", a)[1])
-    disks.sort(key=str.lower)
-    #hidden shares last
-    disks.sort(key=lambda disk: disk[len(disk)-1]!='$', reverse=True)
-    print('<separator label="Mount" />')
-    for disk in disks:
-        print('<item label="'+disk+'">')
-        print('<action name="Execute">')
-        if guest:
-            print('<command>urxvt -e sh -c "sudo mkdir '+mountpath+'/'+server+'/'+re.escape(disk)+'; sudo mount -t cifs //'+server+'/'+re.escape(disk)+' '+mountpath+'/'+server+'/'+re.escape(disk)+' -o ip='+serverip+',guest,file_mode=0777,dir_mode=0777,noacl,noperm"</command>')
-        else:
-            print('<command>urxvt -e sh -c "sudo mkdir '+mountpath+'/'+server+'/'+re.escape(disk)+'; sudo mount -t cifs //'+server+'/'+re.escape(disk)+' '+mountpath+'/'+server+'/'+re.escape(disk)+' -o ip='+serverip+',credentials='+credentialpath+'/'+server+',file_mode=0777,dir_mode=0777,noacl,noperm"</command>')
-        print('</action>')
-        print('</item>')
-    
-    printers = []
-    for a in shares:
-        if re.match("Printer", a):
-            printers.append(re.split("[|]", a)[1])
-    printers.sort(key=str.lower)
-    #hidden shares last
-    printers.sort(key=lambda printer: printer[len(disk)-1]!='$', reverse=True)
-    print('<separator label="Printer" />')
-    for printer in printers:
-        print('<item label="'+printer+'">')
-        print('<action name="Execute">')
-        #smb://username.password@servername/printer
-        print('<command>sh -c "echo \"smb://'+server+'/'+printer+'\" | xclip"</command>')
-        print('</action>')
-        print('</item>')
     print('</openbox_pipe_menu>')

@@ -3,15 +3,16 @@ smbpipe (Python version)
 smbpipe is an openbox pipe menu for accessing (list, mount, etc.) samba shares.
 Shares containing spaces are handled.
 Printers will be copied to clipboard for usage with CUPS.
-Changing or creating of credential files is supported and the right permissions (chmod 600) are set.
+Changing or creating of credential files is supported and the right permissions (folder 700, file 600) are set.
 Shares are mounted using sudo, but permissions are set that every user can access the mounted shares.
-Shares accessible using anonymous login (guest) should be listed and mounted using the guest option.
+Shares are accessible through different logins and a anonymous login (guest).
 
 Usage:
 Add something like this to your menu.xml
 <menu id="smbpipe" label="Samba Shares" execute="python /path/to/smbpipe.py" />
-Credential files should be stored in $XDG_DATA_HOME/smbpipe as a file with the name of the server.
-Do NOT forget to set the right permissions (chmod 600) if you write the credential files yourself.
+Credential files should be stored in $XDG_DATA_HOME/smbpipe/servername as a file with the username or whatever you like.
+Do NOT forget to set the right permissions (chmod 600) if you write the credential files yourself,
+directory for credential files should have the right permissions too (chmod 700).
 
 Dependencies:
 python
