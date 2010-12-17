@@ -5,6 +5,7 @@ Shares containing spaces are handled.
 Printers will be copied to clipboard for usage with CUPS.
 Changing or creating of credential files is supported and the right permissions (chmod 600) are set.
 Shares are mounted using sudo, but permissions are set that every user can access the mounted shares.
+Shares accessible using anonymous login (guest) should be listed and mounted using the guest option.
 
 Usage:
 Add something like this to your menu.xml

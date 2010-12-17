@@ -70,19 +70,16 @@ elif sys.argv[1] == "--server":
     print('<openbox_pipe_menu>')
     ip = subprocess.getoutput("nmblookup "+server+" | grep "+server+"'<' | sed -e 's/ [^ ]*$//g'").splitlines()
     serverip="ERROR"
-    #print('<item label="Change credentials">')
-    #if !os.path.isfile(credentialpath+"/"+server):
-    #    username = ""
-    #    password = ""
-    #    with open(credentialpath+'/'+server, 'w') as f:
-    #        f.write('username='+username+'\n')
-    #        f.write('username='+username+'\n')
-    #    f.closed
     #if no credential file use guest option for mounting/smbclient
+    #TODO add possibility to use different logins on a server
+    #TODO guest as standard (or in the first submenu) and all other users (get 
+    #TODO users out of credential files) and add option to add/delete users
     if os.path.isfile(credentialpath+"/"+server):
         print('<item label="Change credential file">')
+        guest = False
     else:
         print('<item label="Create credential file">')
+        guest = True
     print('<action name="Execute">')
     print('<command>urxvt -e sh -c "python '+sys.argv[0]+' --credential-file '+server+'"</command>')
     print('</action>')
@@ -92,7 +89,10 @@ elif sys.argv[1] == "--server":
         if re.match("\d+\.\d+\.\d+\.\d+", line):
             serverip=line.rstrip()
             break
-    shares = subprocess.getoutput("smbclient -L \\"+server+" -g --authentication-file="+credentialpath+"/"+server).splitlines()
+    if guest:
+        shares = subprocess.getoutput("smbclient -L \\"+server+" -g -U guest -N").splitlines()
+    else:
+        shares = subprocess.getoutput("smbclient -L \\"+server+" -g --authentication-file="+credentialpath+"/"+server).splitlines()
     for a in shares[:]:
         if not re.search("[|]", a):
             shares.remove(a)
@@ -108,7 +108,10 @@ elif sys.argv[1] == "--server":
     for disk in disks:
         print('<item label="'+disk+'">')
         print('<action name="Execute">')
-        print('<command>urxvt -e sh -c "sudo mkdir '+mountpath+'/'+server+'/'+re.escape(disk)+'; sudo mount -t cifs //'+server+'/'+re.escape(disk)+' '+mountpath+'/'+server+'/'+re.escape(disk)+' -o ip='+serverip+',credentials='+credentialpath+'/'+server+',file_mode=0777,dir_mode=0777,noacl,noperm"</command>')
+        if guest:
+            print('<command>urxvt -e sh -c "sudo mkdir '+mountpath+'/'+server+'/'+re.escape(disk)+'; sudo mount -t cifs //'+server+'/'+re.escape(disk)+' '+mountpath+'/'+server+'/'+re.escape(disk)+' -o ip='+serverip+',guest,file_mode=0777,dir_mode=0777,noacl,noperm"</command>')
+        else:
+            print('<command>urxvt -e sh -c "sudo mkdir '+mountpath+'/'+server+'/'+re.escape(disk)+'; sudo mount -t cifs //'+server+'/'+re.escape(disk)+' '+mountpath+'/'+server+'/'+re.escape(disk)+' -o ip='+serverip+',credentials='+credentialpath+'/'+server+',file_mode=0777,dir_mode=0777,noacl,noperm"</command>')
         print('</action>')
         print('</item>')
     
