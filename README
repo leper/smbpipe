@@ -4,6 +4,7 @@ smbpipe is an openbox pipe menu for accessing (list, mount, etc.) samba shares.
 Shares containing spaces are handled.
 Printers will be copied to clipboard for usage with CUPS.
 Changing or creating of credential files is supported and the right permissions (folder 700, file 600) are set.
+Deleting of users (credential file) is supported.
 Shares are mounted using sudo, but permissions are set that every user can access the mounted shares.
 Shares are accessible through different logins and a anonymous login (guest).
 

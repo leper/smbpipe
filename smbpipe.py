@@ -16,9 +16,21 @@ def getshares(server, serverip, user):
     if user == "guest":
         listoption = "-U guest -N"
         mountoption = "guest"
+        edituser = "" #guest is unchangeable
     else:
         listoption = "--authentication-file="+credentialpath+"/"+server+"/"+user
         mountoption = "credentials="+credentialpath+"/"+server+"/"+user
+        edituser =  '<separator label="Edit User" />'+\
+        '<item label="Delete '+user+'">'+\
+        '<action name="Execute">'+\
+        '<command>python '+sys.argv[0]+' --credential-file '+server+' --user '+user+' --remove </command>'+\
+        '</action>'+\
+        '</item>'+\
+        '<item label="Change password">'+\
+        '<action name="Execute">'+\
+        '<command>urxvt -e sh -c "python '+sys.argv[0]+' --credential-file '+server+' --user '+user+'"</command>'+\
+        '</action>'+\
+        '</item>'
 
     shares = subprocess.getoutput("smbclient -L \\"+server+" -g "+listoption).splitlines()
     for a in shares[:]:
@@ -56,6 +68,7 @@ def getshares(server, serverip, user):
         print('</action>')
         print('</item>')
 
+    print(edituser)
 
 
 if len(sys.argv) == 1:
@@ -70,11 +83,16 @@ if len(sys.argv) == 1:
 
 elif sys.argv[1] == "--help" or sys.argv[1] == "-h":
     print("""\
-Usage: """+sys.argv[0]+""" [--serverlist|--refresh|--server server]
+Usage: """+sys.argv[0]+""" [--serverlist | --refresh | --server server | --credentialfile server [--user user [--remove]]
 Args:
-    --serverlist    Returns the serverlist
-    --refresh       Deletes temporary file. Next --serverlist returns a new serverlist
-    --server server Returns the shares for server
+    --serverlist            Returns the serverlist
+    --refresh               Deletes temporary file. Next --serverlist returns a new serverlist
+    --server server         Returns the shares for server
+    --credentialfile server Prompts for a username and a password for server and writes a credential file
+        -u user
+        --user user         Prompts for a password for user and writes/updates the credential file
+        -r
+        --remove            Removes the credential file for the user (only with --user)
 """)
     exit()
 
@@ -103,18 +121,31 @@ elif sys.argv[1] == "--serverlist":
 
 elif sys.argv[1] == "--credential-file":
     server = sys.argv[2]
-    try:
-        os.mkdir(credentialpath+"/"+server)
-    except OSError:
-        pass
-    subprocess.call(["chmod", "700", credentialpath+"/"+server])
-    username = input("Username: ")
-    password = getpass.getpass()
-    with open(credentialpath+'/'+server+'/'+username, 'w') as f:
-        f.write('username='+username+'\n')
-        f.write('password='+password+'\n')
-    f.closed
-    subprocess.call(["chmod", "600", credentialpath+"/"+server+"/"+username])
+    username = ""
+    remove = False
+    # is user set -> check if remove (-> remove) else -> change (do not ask for user)
+    if len(sys.argv) > 3:
+        if sys.argv[3] == "--user" or sys.argv[3] == "-u":
+            username = sys.argv[4]
+            if len(sys.argv) > 5:
+                if sys.argv[5] == "--remove" or sys.argv[5] == "-r":
+                    remove = True
+    if remove:
+        subprocess.call(["rm", "-f", credentialpath+"/"+server+"/"+username])
+    else:
+        try:
+            os.mkdir(credentialpath+"/"+server)
+        except OSError:
+            pass
+        subprocess.call(["chmod", "700", credentialpath+"/"+server])
+        if username == "":
+            username = input("Username: ")
+        password = getpass.getpass()
+        with open(credentialpath+'/'+server+'/'+username, 'w') as f:
+            f.write('username='+username+'\n')
+            f.write('password='+password+'\n')
+        f.closed
+        subprocess.call(["chmod", "600", credentialpath+"/"+server+"/"+username])
 
 elif sys.argv[1] == "--server":
     server = sys.argv[2]
