@@ -6,11 +6,13 @@ Printers will be copied to clipboard for usage with CUPS.
 Changing or creating of credential files is supported and the right permissions (folder 700, file 600) are set.
 Deleting of users (credential file) is supported.
 Shares are mounted using sudo, but permissions are set that every user can access the mounted shares.
-Shares are accessible through different logins and a anonymous login (guest).
+Shares are accessible through different logins and an anonymous login (guest).
 
 Usage:
 Add something like this to your menu.xml
 <menu id="smbpipe" label="Samba Shares" execute="python /path/to/smbpipe.py" />
+If you want your filemanager to open a share upon mounting use the following line
+<menu id="smbpipe" label="Samba Shares" execue="python /path/to/smbpipe.py --filemanager yourfilemanager" />
 Credential files should be stored in $XDG_DATA_HOME/smbpipe/servername as a file with the username or whatever you like.
 Do NOT forget to set the right permissions (chmod 600) if you write the credential files yourself,
 directory for credential files should have the right permissions too (chmod 700).

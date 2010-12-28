@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/python
 import sys
 import re
 import os
@@ -12,7 +12,7 @@ tmppath = "/tmp"
 tmpfile = "openbox_smbpipe_tmp"
 maxage = 30 #in minutes
 
-def getshares(server, serverip, user):
+def getshares(server, serverip, user, filemanager):
     if user == "guest":
         listoption = "-U guest -N"
         mountoption = "guest"
@@ -46,9 +46,13 @@ def getshares(server, serverip, user):
     disks.sort(key=lambda disk: disk[len(disk)-1]!='$', reverse=True)
     print('<separator label="Mount" />')
     for disk in disks:
+        localpath = mountpath+'/'+server+'/'+re.escape(disk)
+        openpath = ""
+        if filemanager != "":
+            openpath = filemanager + " " + localpath
         print('<item label="'+disk+'">')
         print('<action name="Execute">')
-        print('<command>urxvt -e sh -c "sudo mkdir '+mountpath+'/'+server+'/'+re.escape(disk)+'; sudo mount -t cifs //'+server+'/'+re.escape(disk)+' '+mountpath+'/'+server+'/'+re.escape(disk)+' -o ip='+serverip+','+mountoption+',file_mode=0777,dir_mode=0777,noacl,noperm"</command>')
+        print('<command>urxvt -e sh -c "sudo mkdir '+localpath+'; sudo mount -t cifs //'+server+'/'+re.escape(disk)+' '+localpath+' -o ip='+serverip+','+mountoption+',file_mode=0777,dir_mode=0777,noacl,noperm ; '+openpath+'"</command>')
         print('</action>')
         print('</item>')
     
@@ -71,9 +75,13 @@ def getshares(server, serverip, user):
     print(edituser)
 
 
-if len(sys.argv) == 1:
+if len(sys.argv) == 1 or len(sys.argv) == 3 and sys.argv[1] == "--filemanager":
+    usefilemanager = ""
+    if len(sys.argv) == 3:
+        filemanager = sys.argv[2]
+        usefilemanager += "--filemanager " + filemanager
     print('<openbox_pipe_menu>')
-    print('<menu id="smbpipepython" label="Servers" execute="python '+sys.argv[0]+' --serverlist" />')
+    print('<menu id="smbpipepython" label="Servers" execute="python '+sys.argv[0]+' '+usefilemanager+' --serverlist" />')
     print('<item label="Refresh list">')
     print('<action name="Execute">')
     print('<command>python '+sys.argv[0]+' --refresh</command>')
@@ -83,8 +91,9 @@ if len(sys.argv) == 1:
 
 elif sys.argv[1] == "--help" or sys.argv[1] == "-h":
     print("""\
-Usage: """+sys.argv[0]+""" [--serverlist | --refresh | --server server | --credentialfile server [--user user [--remove]]
+Usage: """+sys.argv[0]+""" [--filemanager fm] [--serverlist | --refresh | --server server | --credentialfile server [--user user [--remove]]
 Args:
+    --filemanager fm        Open the share (mounted location) when mounting a share
     --serverlist            Returns the serverlist
     --refresh               Deletes temporary file. Next --serverlist returns a new serverlist
     --server server         Returns the shares for server
@@ -99,7 +108,11 @@ Args:
 elif sys.argv[1] == "--refresh":
     subprocess.call(["rm", "-f", tmppath+"/"+tmpfile])
 
-elif sys.argv[1] == "--serverlist":
+elif sys.argv[1] == "--serverlist" or len(sys.argv) == 4 and sys.argv[3] == "--serverlist":
+    usefilemanager = ""
+    if len(sys.argv) == 4 and sys.argv[1] == "--filemanager":
+        filemanager = sys.argv[2]
+        usefilemanager += "--filemanager " + filemanager
     try:
         age=time.time()-os.path.getmtime(tmppath+'/'+tmpfile)
     except OSError:
@@ -111,7 +124,7 @@ elif sys.argv[1] == "--serverlist":
             servers = subprocess.getoutput("smbtree -S -N -g | grep '\\\\.' | sed -e 's/\t[\\]*//g' | tr '[:upper:]' '[:lower:]'")
             for a in servers.splitlines():
                 server = (str(a)).strip()
-                f.write('<menu id="'+server+'" label="'+server+'" execute="python '+sys.argv[0]+' --server '+server+'" />')
+                f.write('<menu id="'+server+'" label="'+server+'" execute="python '+sys.argv[0]+' '+usefilemanager+' --server '+server+'" />')
             f.write('</openbox_pipe_menu>')
         f.closed
 
@@ -147,8 +160,14 @@ elif sys.argv[1] == "--credential-file":
         f.closed
         subprocess.call(["chmod", "600", credentialpath+"/"+server+"/"+username])
 
-elif sys.argv[1] == "--server":
-    server = sys.argv[2]
+elif sys.argv[1] == "--server" or len(sys.argv) == 5 and sys.argv[3] == "--server":
+    filemanager = ""
+    if len(sys.argv) == 3:
+        server = sys.argv[2]
+    else:
+        server = sys.argv[4]
+    if len(sys.argv) == 5 and sys.argv[1] == "--filemanager":
+        filemanager = sys.argv[2]
     print('<openbox_pipe_menu>')
     ip = subprocess.getoutput("nmblookup "+server+" | grep "+server+"'<' | sed -e 's/ [^ ]*$//g'").splitlines()
     serverip="ERROR"
@@ -165,7 +184,7 @@ elif sys.argv[1] == "--server":
         pass
     for user in users:
         print('<menu id="'+server+'-'+user+'" label="'+user+'">')
-        getshares(server, serverip, user)
+        getshares(server, serverip, user, filemanager)
         print('</menu>')
     print('<item label="Create credential file">')
     print('<action name="Execute">')
