@@ -75,11 +75,15 @@ def getshares(server, serverip, user, filemanager):
     print(edituser)
 
 
-if len(sys.argv) == 1 or len(sys.argv) == 3 and sys.argv[1] == "--filemanager":
-    usefilemanager = ""
-    if len(sys.argv) == 3:
-        filemanager = sys.argv[2]
-        usefilemanager += "--filemanager " + filemanager
+filemanager = ""
+usefilemanager = ""
+parameteroffset = 0
+if len(sys.argv) > 2 and sys.argv[1] == "--filemanager":
+    filemanager = sys.argv[2]
+    parameteroffset += 2
+    usefilemanager = "--filemanager " + filemanager
+
+if len(sys.argv) == 1+parameteroffset:
     print('<openbox_pipe_menu>')
     print('<menu id="smbpipepython" label="Servers" execute="python '+sys.argv[0]+' '+usefilemanager+' --serverlist" />')
     print('<item label="Refresh list">')
@@ -91,28 +95,23 @@ if len(sys.argv) == 1 or len(sys.argv) == 3 and sys.argv[1] == "--filemanager":
 
 elif sys.argv[1] == "--help" or sys.argv[1] == "-h":
     print("""\
-Usage: """+sys.argv[0]+""" [--filemanager fm] [--serverlist | --refresh | --server server | --credentialfile server [--user user [--remove]]
+Usage: """+sys.argv[0]+"""  [--help|-h] [--filemanager fm] [--serverlist | --refresh | --server server | --credentialfile server [--user user [--remove]]
 Args:
+    --help or -h            Display this help
     --filemanager fm        Open the share (mounted location) when mounting a share
     --serverlist            Returns the serverlist
     --refresh               Deletes temporary file. Next --serverlist returns a new serverlist
     --server server         Returns the shares for server
     --credentialfile server Prompts for a username and a password for server and writes a credential file
-        -u user
         --user user         Prompts for a password for user and writes/updates the credential file
-        -r
         --remove            Removes the credential file for the user (only with --user)
 """)
     exit()
 
-elif sys.argv[1] == "--refresh":
+elif sys.argv[1+parmeteroffset] == "--refresh":
     subprocess.call(["rm", "-f", tmppath+"/"+tmpfile])
 
-elif sys.argv[1] == "--serverlist" or len(sys.argv) == 4 and sys.argv[3] == "--serverlist":
-    usefilemanager = ""
-    if len(sys.argv) == 4 and sys.argv[1] == "--filemanager":
-        filemanager = sys.argv[2]
-        usefilemanager += "--filemanager " + filemanager
+elif sys.argv[1+parameteroffset] == "--serverlist":
     try:
         age=time.time()-os.path.getmtime(tmppath+'/'+tmpfile)
     except OSError:
@@ -132,16 +131,16 @@ elif sys.argv[1] == "--serverlist" or len(sys.argv) == 4 and sys.argv[3] == "--s
         print(f.read())
     f.closed
 
-elif sys.argv[1] == "--credential-file":
-    server = sys.argv[2]
+elif sys.argv[1+parameteroffset] == "--credential-file":
+    server = sys.argv[2+parameteroffset]
     username = ""
     remove = False
     # is user set -> check if remove (-> remove) else -> change (do not ask for user)
-    if len(sys.argv) > 3:
-        if sys.argv[3] == "--user" or sys.argv[3] == "-u":
-            username = sys.argv[4]
-            if len(sys.argv) > 5:
-                if sys.argv[5] == "--remove" or sys.argv[5] == "-r":
+    if len(sys.argv) > 3+parameteroffset:
+        if sys.argv[3+parameteroffset] == "--user":
+            username = sys.argv[4+parameteroffset]
+            if len(sys.argv) > 5+parameteroffset:
+                if sys.argv[5+parameteroffset] == "--remove":
                     remove = True
     if remove:
         subprocess.call(["rm", "-f", credentialpath+"/"+server+"/"+username])
@@ -160,14 +159,8 @@ elif sys.argv[1] == "--credential-file":
         f.closed
         subprocess.call(["chmod", "600", credentialpath+"/"+server+"/"+username])
 
-elif sys.argv[1] == "--server" or len(sys.argv) == 5 and sys.argv[3] == "--server":
-    filemanager = ""
-    if len(sys.argv) == 3:
-        server = sys.argv[2]
-    else:
-        server = sys.argv[4]
-    if len(sys.argv) == 5 and sys.argv[1] == "--filemanager":
-        filemanager = sys.argv[2]
+elif sys.argv[1+parameteroffset] == "--server":
+    server = sys.argv[2+parameteroffset]
     print('<openbox_pipe_menu>')
     ip = subprocess.getoutput("nmblookup "+server+" | grep "+server+"'<' | sed -e 's/ [^ ]*$//g'").splitlines()
     serverip="ERROR"
