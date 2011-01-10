@@ -108,7 +108,7 @@ Args:
 """)
     exit()
 
-elif sys.argv[1+parmeteroffset] == "--refresh":
+elif sys.argv[1+parameteroffset] == "--refresh":
     subprocess.call(["rm", "-f", tmppath+"/"+tmpfile])
 
 elif sys.argv[1+parameteroffset] == "--serverlist":
