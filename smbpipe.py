@@ -95,16 +95,16 @@ if len(sys.argv) == 1+parameteroffset:
 
 elif sys.argv[1] == "--help" or sys.argv[1] == "-h":
     print("""\
-Usage: """+sys.argv[0]+"""  [--help|-h] [--filemanager fm] [--serverlist | --refresh | --server server | --credentialfile server [--user user [--remove]]
+Usage: """+sys.argv[0]+"""  [--help|-h] [--filemanager fm] [--serverlist | --refresh | --server server | --credential-file server [--user user [--remove]]
 Args:
-    --help or -h            Display this help
-    --filemanager fm        Open the share (mounted location) when mounting a share
-    --serverlist            Returns the serverlist
-    --refresh               Deletes temporary file. Next --serverlist returns a new serverlist
-    --server server         Returns the shares for server
-    --credentialfile server Prompts for a username and a password for server and writes a credential file
-        --user user         Prompts for a password for user and writes/updates the credential file
-        --remove            Removes the credential file for the user (only with --user)
+    --help or -h             Display this help
+    --filemanager fm         Open the share (mounted location) when mounting a share
+    --serverlist             Returns the serverlist
+    --refresh                Deletes temporary file. Next --serverlist returns a new serverlist
+    --server server          Returns the shares for server
+    --credential-file server Prompts for a username and a password for server and writes a credential file
+        --user user          Prompts for a password for user and writes/updates the credential file
+            --remove         Removes the credential file for the user (only with --user)
 """)
     exit()
 
